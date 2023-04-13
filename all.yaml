@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-for-api-client
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-client-token
+  annotations:
+    kubernetes.io/service-account.name: sa-for-api-client
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-client-clusterrole-binding
+subjects:
+  - kind: ServiceAccount
+    name: sa-for-api-client
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: api-client-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-client-clusterrole
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+  - apiGroups:
+      - consdata.com
+    resources:
+      - operatorresources
+    verbs:
+      - create
+      - update
+      - list
+      - get
+      - watch
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: operatorresources.consdata.com
+spec:
+  group: consdata.com
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                resources:
+                  type: array
+                  items:
+                    type: string
+  names:
+    kind: OperatorResource
+    listKind: OperatorResourceList
+    plural: operatorresources
+    singular: operatorresource
+    shortNames:
+      - opr
